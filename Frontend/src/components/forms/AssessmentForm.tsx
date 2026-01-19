@@ -1,6 +1,6 @@
 "use client"
 
-import { useForm } from "react-hook-form";
+import { useForm, Path } from "react-hook-form";
 import { useState, useEffect } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -207,7 +207,7 @@ const AssessmentForm = ({
           label="Passing Score (%)"
           name="passingScore"
           type="number"
-          register={(name) => register(name, { setValueAs: (v) => v === '' ? 70 : parseInt(v, 10) })}
+          register={(name: Path<CreateInputs | UpdateInputs>) => register(name, { setValueAs: (v) => v === '' ? 70 : parseInt(v, 10) })}
           error={errors.passingScore}
           defaultValue={data?.passingScore?.toString() || '70'}
         />
@@ -215,7 +215,7 @@ const AssessmentForm = ({
           label="Max Attempts (Optional)"
           name="maxAttempts"
           type="number"
-          register={(name) => register(name, { setValueAs: (v) => v === '' ? undefined : parseInt(v, 10) })}
+          register={(name: Path<CreateInputs | UpdateInputs>) => register(name, { setValueAs: (v) => v === '' ? undefined : parseInt(v, 10) })}
           error={errors.maxAttempts}
           defaultValue={data?.maxAttempts?.toString() || ''}
         />
@@ -223,7 +223,7 @@ const AssessmentForm = ({
           label="Time Limit (minutes, Optional)"
           name="timeLimit"
           type="number"
-          register={(name) => register(name, { setValueAs: (v) => v === '' ? undefined : parseInt(v, 10) })}
+          register={(name: Path<CreateInputs | UpdateInputs>) => register(name, { setValueAs: (v) => v === '' ? undefined : parseInt(v, 10) })}
           error={errors.timeLimit}
           defaultValue={data?.timeLimit?.toString() || ''}
         />
