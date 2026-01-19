@@ -1,0 +1,596 @@
+// Prisma Schema for Course Management System
+// This is a starter template - adjust based on your needs
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Organizations
+model Organization {
+  id               String   @id @default(uuid())
+  name             String   @unique
+  slug             String   @unique
+  domain           String?  @unique
+  logoUrl          String?  @map("logo_url")
+  settings         Json     @default("{}")
+  subscriptionTier String   @default("free") @map("subscription_tier")
+  isActive         Boolean  @default(true) @map("is_active")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  departments   Department[]
+  users         User[]
+  courses       Course[]
+  sessions      TrainingSession[]
+  announcements Announcement[]
+  messages      Message[]
+  certTemplates CertificateTemplate[]
+  auditLogs     AuditLog[]
+
+  @@map("organizations")
+}
+
+// Departments
+model Department {
+  id             String   @id @default(uuid())
+  organizationId String   @map("organization_id")
+  name           String
+  code           String
+  description    String?
+  managerId      String?  @unique @map("manager_id")
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  organization  Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  manager       User?             @relation("DepartmentManager", fields: [managerId], references: [id])
+  users         User[]
+  courses       Course[]
+  sessions      TrainingSession[]
+  announcements Announcement[]
+
+  @@unique([organizationId, code])
+  @@index([organizationId])
+  @@index([code])
+  @@map("departments")
+}
+
+// Users
+model User {
+  id             String    @id @default(uuid())
+  organizationId String?   @map("organization_id")
+  departmentId   String?   @map("department_id")
+  employeeId     String
+  username       String    @unique
+  email          String    @unique
+  passwordHash   String    @map("password_hash")
+  firstName      String    @map("first_name")
+  lastName       String    @map("last_name")
+  phone          String?
+  address        String?
+  photoUrl       String?   @map("photo_url")
+  role           String // 'admin', 'instructor', 'trainee'
+  position       String?
+  bio            String?
+  expertise      String[]  @default([])
+  isActive       Boolean   @default(true) @map("is_active")
+  lastLogin      DateTime? @map("last_login")
+  emailVerified  Boolean   @default(false) @map("email_verified")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  organization      Organization? @relation(fields: [organizationId], references: [id])
+  department        Department?   @relation(fields: [departmentId], references: [id])
+  managedDepartment Department?   @relation("DepartmentManager")
+
+  // Course relations
+  instructorCourses     Course[]               @relation("CourseInstructor")
+  enrollments           Enrollment[]
+  progress              Progress[]
+  assessmentAttempts    AssessmentAttempt[]
+  assignmentSubmissions AssignmentSubmission[]
+
+  // Other relations
+  createdSessions      TrainingSession[]
+  sessionAttendances   SessionAttendance[]
+  sentMessages         Message[]              @relation("MessageSender")
+  receivedMessages     Message[]              @relation("MessageRecipient")
+  createdAnnouncements Announcement[]
+  gradedAttempts       AssessmentAttempt[]    @relation("GradedBy")
+  gradedSubmissions    AssignmentSubmission[] @relation("GradedBy")
+  auditLogs            AuditLog[]
+
+  @@unique([organizationId, employeeId])
+  @@index([organizationId])
+  @@index([departmentId])
+  @@index([email])
+  @@index([username])
+  @@index([role])
+  @@map("users")
+}
+
+// Courses
+model Course {
+  id                    String    @id @default(uuid())
+  organizationId        String    @map("organization_id")
+  courseCode            String    @map("course_code")
+  title                 String
+  description           String?
+  instructorId          String    @map("instructor_id")
+  departmentId          String?   @map("department_id")
+  thumbnailUrl          String?   @map("thumbnail_url")
+  difficultyLevel       String    @default("beginner") @map("difficulty_level")
+  estimatedDuration     Int?      @map("estimated_duration")
+  maxEnrollments        Int?      @map("max_enrollments")
+  isCertified           Boolean   @default(false) @map("is_certified")
+  certificateTemplateId String?   @map("certificate_template_id")
+  status                String    @default("draft") // 'draft', 'published', 'archived'
+  isPublic              Boolean   @default(false) @map("is_public")
+  tags                  String[]  @default([])
+  metadata              Json      @default("{}")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+  publishedAt           DateTime? @map("published_at")
+
+  // Relations
+  organization        Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  instructor          User                 @relation("CourseInstructor", fields: [instructorId], references: [id])
+  department          Department?          @relation(fields: [departmentId], references: [id])
+  certificateTemplate CertificateTemplate? @relation(fields: [certificateTemplateId], references: [id])
+
+  modules       Module[]
+  prerequisites CoursePrerequisite[] @relation("Course")
+  requiredBy    CoursePrerequisite[] @relation("Prerequisite")
+  enrollments   Enrollment[]
+  assessments   Assessment[]
+  assignments   Assignment[]
+  sessions      TrainingSession[]
+  announcements Announcement[]
+  messages      Message[]
+
+  @@unique([organizationId, courseCode])
+  @@index([organizationId])
+  @@index([instructorId])
+  @@index([departmentId])
+  @@index([status])
+  @@map("courses")
+}
+
+// Course Prerequisites
+model CoursePrerequisite {
+  id                   String   @id @default(uuid())
+  courseId             String   @map("course_id")
+  prerequisiteCourseId String   @map("prerequisite_course_id")
+  isMandatory          Boolean  @default(true) @map("is_mandatory")
+  createdAt            DateTime @default(now()) @map("created_at")
+
+  course       Course @relation("Course", fields: [courseId], references: [id], onDelete: Cascade)
+  prerequisite Course @relation("Prerequisite", fields: [prerequisiteCourseId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, prerequisiteCourseId])
+  @@index([courseId])
+  @@map("course_prerequisites")
+}
+
+// Modules
+model Module {
+  id                String   @id @default(uuid())
+  courseId          String   @map("course_id")
+  title             String
+  description       String?
+  order             Int
+  estimatedDuration Int?     @map("estimated_duration")
+  isRequired        Boolean  @default(true) @map("is_required")
+  unlockCondition   Json?    @map("unlock_condition")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  content     Content[]
+  assessments Assessment[]
+  progress    Progress[]
+
+  @@unique([courseId, order])
+  @@index([courseId])
+  @@map("modules")
+}
+
+// Content
+model Content {
+  id          String   @id @default(uuid())
+  moduleId    String   @map("module_id")
+  contentType String   @map("content_type") // 'video', 'document', 'text', 'link', 'assignment' (quizzes use Assessment model)
+  title       String
+  description String?
+  order       Int
+  fileUrl     String?  @map("file_url")
+  fileSize    BigInt?  @map("file_size")
+  duration    Int? // Duration in seconds (for videos)
+  contentData Json?    @map("content_data")
+  isRequired  Boolean  @default(true) @map("is_required")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  module   Module     @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  progress Progress[]
+
+  @@index([moduleId])
+  @@index([contentType])
+  @@map("content")
+}
+
+// Assessments
+model Assessment {
+  id           String   @id @default(uuid())
+  moduleId     String?  @map("module_id")
+  courseId     String   @map("course_id")
+  title        String
+  description  String?
+  type         String   @default("quiz") // 'quiz', 'assignment'
+  passingScore Int      @default(70) @map("passing_score")
+  maxAttempts  Int?     @map("max_attempts")
+  timeLimit    Int?     @map("time_limit")
+  isRequired   Boolean  @default(true) @map("is_required")
+  questions    Json // Questions array stored as JSON
+  settings     Json     @default("{}")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  module   Module?             @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  course   Course              @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  attempts AssessmentAttempt[]
+
+  @@index([moduleId])
+  @@index([courseId])
+  @@index([type])
+  @@map("assessments")
+}
+
+// Enrollments
+model Enrollment {
+  id                  String    @id @default(uuid())
+  traineeId           String    @map("trainee_id")
+  courseId            String    @map("course_id")
+  enrolledBy          String?   @map("enrolled_by")
+  enrollmentType      String    @default("self") @map("enrollment_type")
+  status              String    @default("enrolled") // 'enrolled', 'in_progress', 'completed', 'dropped'
+  progressPercentage  Decimal   @default(0) @map("progress_percentage") @db.Decimal(5, 2)
+  startedAt           DateTime? @map("started_at")
+  completedAt         DateTime? @map("completed_at")
+  dueDate             DateTime? @map("due_date")
+  certificateIssued   Boolean   @default(false) @map("certificate_issued")
+  certificateIssuedAt DateTime? @map("certificate_issued_at")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  trainee     User                   @relation(fields: [traineeId], references: [id], onDelete: Cascade)
+  course      Course                 @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  progress    Progress[]
+  attempts    AssessmentAttempt[]
+  submissions AssignmentSubmission[]
+  certificate Certificate?
+
+  @@unique([traineeId, courseId])
+  @@index([traineeId])
+  @@index([courseId])
+  @@index([status])
+  @@map("enrollments")
+}
+
+// Progress
+model Progress {
+  id                 String    @id @default(uuid())
+  enrollmentId       String    @map("enrollment_id")
+  moduleId           String    @map("module_id")
+  contentId          String?   @map("content_id")
+  traineeId          String    @map("trainee_id")
+  status             String    @default("not_started") // 'not_started', 'in_progress', 'completed'
+  progressPercentage Decimal   @default(0) @map("progress_percentage") @db.Decimal(5, 2)
+  timeSpent          Int       @default(0) @map("time_spent")
+  contentData        Json?     @map("content_data") // For quiz submissions and other content-specific data
+  lastAccessedAt     DateTime? @map("last_accessed_at")
+  startedAt          DateTime? @map("started_at")
+  completedAt        DateTime? @map("completed_at")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  enrollment Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  module     Module     @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  content    Content?   @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  trainee    User       @relation(fields: [traineeId], references: [id], onDelete: Cascade)
+
+  @@unique([enrollmentId, moduleId, contentId])
+  @@index([enrollmentId])
+  @@index([moduleId])
+  @@index([contentId])
+  @@index([traineeId])
+  @@map("progress")
+}
+
+// Assessment Attempts
+model AssessmentAttempt {
+  id            String    @id @default(uuid())
+  enrollmentId  String    @map("enrollment_id")
+  assessmentId  String    @map("assessment_id")
+  traineeId     String    @map("trainee_id")
+  attemptNumber Int       @map("attempt_number")
+  answers       Json
+  score         Decimal?  @db.Decimal(5, 2)
+  isPassed      Boolean?  @map("is_passed")
+  timeTaken     Int?      @map("time_taken")
+  startedAt     DateTime  @default(now()) @map("started_at")
+  submittedAt   DateTime? @map("submitted_at")
+  gradedAt      DateTime? @map("graded_at")
+  gradedBy      String?   @map("graded_by")
+  feedback      String?
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  enrollment Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  assessment Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  trainee    User       @relation(fields: [traineeId], references: [id], onDelete: Cascade)
+  grader     User?      @relation("GradedBy", fields: [gradedBy], references: [id])
+
+  @@unique([enrollmentId, assessmentId, attemptNumber])
+  @@index([enrollmentId])
+  @@index([assessmentId])
+  @@index([traineeId])
+  @@map("assessment_attempts")
+}
+
+// Certificate Templates
+model CertificateTemplate {
+  id             String   @id @default(uuid())
+  organizationId String   @map("organization_id")
+  name           String
+  templateHtml   String   @map("template_html")
+  templateCss    String?  @map("template_css")
+  fields         Json
+  isDefault      Boolean  @default(false) @map("is_default")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  organization Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  courses      Course[]
+  certificates Certificate[]
+
+  @@index([organizationId])
+  @@map("certificate_templates")
+}
+
+// Certificates
+model Certificate {
+  id                String    @id @default(uuid())
+  enrollmentId      String    @unique @map("enrollment_id")
+  templateId        String    @map("template_id")
+  certificateNumber String    @unique @map("certificate_number")
+  pdfUrl            String?   @map("pdf_url")
+  issuedAt          DateTime  @default(now()) @map("issued_at")
+  expiresAt         DateTime? @map("expires_at")
+  isValid           Boolean   @default(true) @map("is_valid")
+  revokedAt         DateTime? @map("revoked_at")
+  revokedReason     String?   @map("revoked_reason")
+  createdAt         DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  enrollment Enrollment          @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  template   CertificateTemplate @relation(fields: [templateId], references: [id])
+
+  @@index([enrollmentId])
+  @@index([certificateNumber])
+  @@index([isValid])
+  @@map("certificates")
+}
+
+// Assignments
+model Assignment {
+  id           String    @id @default(uuid())
+  courseId     String    @map("course_id")
+  moduleId     String?   @map("module_id")
+  title        String
+  description  String?
+  instructions String?
+  dueDate      DateTime? @map("due_date")
+  maxScore     Int       @default(100) @map("max_score")
+  isRequired   Boolean   @default(true) @map("is_required")
+  createdBy    String    @map("created_by")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  course      Course                 @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  submissions AssignmentSubmission[]
+
+  @@index([courseId])
+  @@index([moduleId])
+  @@index([dueDate])
+  @@map("assignments")
+}
+
+// Assignment Submissions
+model AssignmentSubmission {
+  id              String    @id @default(uuid())
+  assignmentId    String    @map("assignment_id")
+  enrollmentId    String    @map("enrollment_id")
+  traineeId       String    @map("trainee_id")
+  submissionText  String?   @map("submission_text")
+  submissionFiles String[]  @default([]) @map("submission_files")
+  score           Decimal?  @db.Decimal(5, 2)
+  feedback        String?
+  status          String    @default("submitted") // 'submitted', 'graded', 'returned'
+  submittedAt     DateTime  @default(now()) @map("submitted_at")
+  gradedAt        DateTime? @map("graded_at")
+  gradedBy        String?   @map("graded_by")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  enrollment Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  trainee    User       @relation(fields: [traineeId], references: [id], onDelete: Cascade)
+  grader     User?      @relation("GradedBy", fields: [gradedBy], references: [id])
+
+  @@unique([assignmentId, enrollmentId])
+  @@index([assignmentId])
+  @@index([enrollmentId])
+  @@index([traineeId])
+  @@index([status])
+  @@map("assignment_submissions")
+}
+
+// Training Sessions
+model TrainingSession {
+  id              String   @id @default(uuid())
+  organizationId  String   @map("organization_id")
+  courseId        String?  @map("course_id")
+  title           String
+  description     String?
+  instructorId    String   @map("instructor_id")
+  departmentId    String?  @map("department_id")
+  sessionType     String   @default("live") @map("session_type")
+  startTime       DateTime @map("start_time")
+  endTime         DateTime @map("end_time")
+  location        String?
+  meetingUrl      String?  @map("meeting_url")
+  maxParticipants Int?     @map("max_participants")
+  status          String   @default("scheduled")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  course       Course?             @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  instructor   User                @relation(fields: [instructorId], references: [id])
+  department   Department?         @relation(fields: [departmentId], references: [id])
+  attendances  SessionAttendance[]
+
+  @@index([organizationId])
+  @@index([courseId])
+  @@index([instructorId])
+  @@index([startTime, endTime])
+  @@index([status])
+  @@map("training_sessions")
+}
+
+// Session Attendances
+model SessionAttendance {
+  id           String    @id @default(uuid())
+  sessionId    String    @map("session_id")
+  userId       String    @map("user_id")
+  status       String    @default("registered") // 'registered', 'attended', 'absent', 'excused'
+  checkInTime  DateTime? @map("check_in_time")
+  checkOutTime DateTime? @map("check_out_time")
+  notes        String?
+  createdAt    DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  session TrainingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, userId])
+  @@index([sessionId])
+  @@index([userId])
+  @@index([status])
+  @@map("session_attendances")
+}
+
+// Announcements
+model Announcement {
+  id             String    @id @default(uuid())
+  organizationId String    @map("organization_id")
+  courseId       String?   @map("course_id")
+  departmentId   String?   @map("department_id")
+  title          String
+  content        String
+  priority       String    @default("normal")
+  isPinned       Boolean   @default(false) @map("is_pinned")
+  publishedAt    DateTime? @map("published_at")
+  expiresAt      DateTime? @map("expires_at")
+  createdBy      String    @map("created_by")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  course       Course?      @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  department   Department?  @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  creator      User         @relation(fields: [createdBy], references: [id])
+
+  @@index([organizationId])
+  @@index([courseId])
+  @@index([departmentId])
+  @@index([publishedAt])
+  @@index([isPinned])
+  @@map("announcements")
+}
+
+// Messages
+model Message {
+  id              String    @id @default(uuid())
+  organizationId  String    @map("organization_id")
+  senderId        String    @map("sender_id")
+  recipientId     String?   @map("recipient_id")
+  courseId        String?   @map("course_id")
+  subject         String?
+  content         String
+  isRead          Boolean   @default(false) @map("is_read")
+  readAt          DateTime? @map("read_at")
+  isArchived      Boolean   @default(false) @map("is_archived")
+  parentMessageId String?   @map("parent_message_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  organization  Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  sender        User         @relation("MessageSender", fields: [senderId], references: [id])
+  recipient     User?        @relation("MessageRecipient", fields: [recipientId], references: [id])
+  course        Course?      @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  parentMessage Message?     @relation("MessageReplies", fields: [parentMessageId], references: [id])
+  replies       Message[]    @relation("MessageReplies")
+
+  @@index([organizationId])
+  @@index([senderId])
+  @@index([recipientId])
+  @@index([courseId])
+  @@index([isRead])
+  @@index([createdAt])
+  @@map("messages")
+}
+
+// Audit Logs
+model AuditLog {
+  id             String   @id @default(uuid())
+  organizationId String?  @map("organization_id")
+  userId         String?  @map("user_id")
+  action         String
+  entityType     String?  @map("entity_type")
+  entityId       String?  @map("entity_id")
+  changes        Json?
+  ipAddress      String?  @map("ip_address")
+  userAgent      String?  @map("user_agent")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  // Relations
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([action])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
