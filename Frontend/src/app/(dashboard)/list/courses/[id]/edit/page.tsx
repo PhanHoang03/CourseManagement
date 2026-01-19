@@ -580,7 +580,11 @@ const CourseEditPage = () => {
                     label="Estimated Duration (hours)"
                     name="estimatedDuration"
                     type="number"
-                    register={(name) => register(name, { setValueAs: (v: string) => v === '' ? '' : parseInt(v, 10) })}
+                    register={(fieldName: string) =>
+                      register(fieldName, {
+                        setValueAs: (v: string) => (v === '' ? '' : parseInt(v, 10)),
+                      })
+                    }
                     error={errors.estimatedDuration}
                     inputProps={{
                       placeholder: "e.g., 10",
