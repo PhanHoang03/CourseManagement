@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { useForm } from "react-hook-form";
+import { useForm, Path } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "@/lib/auth";
@@ -580,7 +580,7 @@ const CourseEditPage = () => {
                     label="Estimated Duration (hours)"
                     name="estimatedDuration"
                     type="number"
-                    register={(fieldName: string) =>
+                    register={(fieldName: Path<FormInputs>) =>
                       register(fieldName, {
                         setValueAs: (v: string) => (v === '' ? '' : parseInt(v, 10)),
                       })
