@@ -86,9 +86,9 @@ const QuizBuilder = ({ value, onChange }: QuizBuilderProps) => {
   const deleteOption = (questionId: string, optionIndex: number) => {
     const question = quizData.questions.find((q: QuizQuestion) => q.id === questionId);
     if (question && question.options.length > 2) {
-      const newOptions = question.options.filter((_, i) => i !== optionIndex);
+      const newOptions = question.options.filter((_: string, i: number) => i !== optionIndex);
       const newCorrectAnswers = Array.isArray(question.correctAnswers)
-        ? question.correctAnswers.filter(a => a !== optionIndex).map(a => a > optionIndex ? a - 1 : a)
+        ? question.correctAnswers.filter((a: number) => a !== optionIndex).map((a: number) => a > optionIndex ? a - 1 : a)
         : question.correctAnswers === optionIndex ? 0 : question.correctAnswers > optionIndex ? question.correctAnswers - 1 : question.correctAnswers;
       updateQuestion(questionId, {
         options: newOptions,
