@@ -1,3 +1,4 @@
+import type React from "react";
 import { FieldError } from "react-hook-form";
 
 type InputFieldProps = {
@@ -7,7 +8,8 @@ type InputFieldProps = {
     name: string;
     defaultValue?: string;  
     error?: FieldError;
-    inputProps?: React.InputHTMLAttributes<HTMLInputElement>
+    required?: boolean;
+    inputProps?: React.InputHTMLAttributes<HTMLInputElement>;
 }
 
 const InputField = ({ 
@@ -17,16 +19,21 @@ const InputField = ({
     name,
     defaultValue, 
     error,
+    required,
     inputProps
 }: InputFieldProps) => {
     return (
         <div className="flex flex-col gap-2 w-full">
-            <label className="text-xs text-gray-500">{label}</label>
+            <label className="text-xs text-gray-500">
+                {label}
+                {required ? <span className="text-red-500"> *</span> : null}
+            </label>
             <input
                 type={type} 
                 {...register(name)} 
                 className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full" 
                 defaultValue={defaultValue}
+                required={required}
                 {...inputProps}
             />
             {error?.message && <p className="text-red-400 text-xs">{error.message.toString()}</p>}
