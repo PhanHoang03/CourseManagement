@@ -1,6 +1,6 @@
 "use client"
 
-import { useForm } from "react-hook-form";
+import { useForm, Path } from "react-hook-form";
 import { useState, useEffect } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -231,7 +231,7 @@ const ModuleForm = ({
           label="Estimated Duration (minutes)"
           name="estimatedDuration"
           type="number"
-          register={(name: string) => register(name as any, { valueAsNumber: true, setValueAs: (v) => v === '' ? undefined : parseInt(v, 10) })}
+          register={(name: Path<CreateInputs | UpdateInputs>) => register(name, { valueAsNumber: true, setValueAs: (v) => v === '' ? undefined : parseInt(v, 10) })}
           error={errors.estimatedDuration}
           defaultValue={data?.estimatedDuration?.toString()}
         />

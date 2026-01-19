@@ -1,6 +1,6 @@
 "use client"
 
-import { useForm } from "react-hook-form";
+import { useForm, Path } from "react-hook-form";
 import { useState, useRef, useCallback } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -443,7 +443,7 @@ const ContentForm = ({
             label="Duration (seconds)"
             name="duration"
             type="number"
-            register={(name: string) => register(name as any, { setValueAs: (v) => v === '' ? undefined : parseInt(v, 10) })}
+            register={(name: Path<CreateInputs | UpdateInputs>) => register(name, { setValueAs: (v) => v === '' ? undefined : parseInt(v, 10) })}
             error={errors.duration}
             defaultValue={data?.duration?.toString()}
           />

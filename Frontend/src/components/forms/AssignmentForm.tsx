@@ -1,6 +1,6 @@
 "use client"
 
-import { useForm } from "react-hook-form";
+import { useForm, Path } from "react-hook-form";
 import { useState, useEffect } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -273,7 +273,7 @@ const AssignmentForm = ({
           label="Max Score"
           name="maxScore"
           type="number"
-          register={(name) => register(name, { setValueAs: (v) => v === '' ? 100 : parseInt(v, 10) })}
+          register={(name: Path<CreateInputs | UpdateInputs>) => register(name, { setValueAs: (v) => v === '' ? 100 : parseInt(v, 10) })}
           error={errors.maxScore}
           defaultValue={data?.maxScore?.toString() || '100'}
         />
