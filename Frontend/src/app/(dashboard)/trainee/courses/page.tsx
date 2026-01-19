@@ -36,7 +36,6 @@ const MyCoursesPage = () => {
       const response = await enrollmentsApi.getAll({
         page,
         limit: pagination.limit,
-        search: searchTerm || undefined,
       });
 
       if (response.success && response.data) {
