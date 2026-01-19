@@ -181,7 +181,7 @@ const AssignmentListPage = () => {
                         {canEdit && (
                           <>
                             <FormModal
-                              entity="assignment"
+                              table="assignment"
                               type="update"
                               data={assignment}
                               onSuccess={fetchAssignments}
