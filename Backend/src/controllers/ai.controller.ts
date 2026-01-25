@@ -8,7 +8,6 @@ import { isValidFileType, getFileSize } from '../utils/documentParser';
 import aiConfig from '../config/ai.config';
 import { BadRequestError } from '../utils/errors';
 
-// Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     const uploadDir = path.join(__dirname, '../../uploads/temp');
@@ -36,9 +35,6 @@ const upload = multer({
 });
 
 class AIController {
-  /**
-   * Test Ollama connection
-   */
   testConnection = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const isConnected = await aiService.testConnection();
@@ -58,9 +54,6 @@ class AIController {
     }
   };
 
-  /**
-   * Generate quiz from document
-   */
   generateQuiz = [
     upload.single('file'),
     async (req: AuthRequest, res: Response, next: NextFunction) => {

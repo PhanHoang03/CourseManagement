@@ -7,8 +7,6 @@ import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
 import { useAuth } from "@/lib/auth";
 import { departmentsApi } from "@/lib/api";
-import Image from "next/image";
-import Link from "next/link";
 
 type Department = {
   id: string;
@@ -108,11 +106,6 @@ const DepartmentsListPage = () => {
       <td className="hidden lg:table-cell">{item._count.courses}</td>
       <td>
         <div className="flex items-center gap-2">
-          <Link href={`/list/departments/${item.id}`}>
-            <button className="w-7 h-7 flex items-center justify-center rounded-full bg-lamaSky">
-              <Image src="/view.png" alt="" width={16} height={16} />
-            </button>
-          </Link>
           {user?.role === "admin" && (
             <>
               <FormModal 

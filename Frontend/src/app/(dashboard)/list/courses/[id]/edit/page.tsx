@@ -11,7 +11,7 @@ import { useAuth } from "@/lib/auth";
 import { coursesApi, organizationsApi, departmentsApi, usersApi } from "@/lib/api";
 import InputField from "@/components/InputField";
 
-type TabType = 'general' | 'organization' | 'details' | 'prerequisites' | 'advanced';
+type TabType = 'general' | 'organization' | 'details';
 
 const updateCourseSchema = z.object({
   title: z.string().min(2, { message: "Course title must be at least 2 characters" }).optional(),
@@ -349,8 +349,6 @@ const CourseEditPage = () => {
               { id: 'general', label: 'General Information' },
               { id: 'organization', label: 'Organization & Access' },
               { id: 'details', label: 'Course Details' },
-              { id: 'prerequisites', label: 'Prerequisites' },
-              { id: 'advanced', label: 'Advanced Settings' },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -619,32 +617,6 @@ const CourseEditPage = () => {
                       <p className="text-xs text-gray-400">Certificate templates will be available soon</p>
                     </div>
                   )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 4: PREREQUISITES (Placeholder) */}
-          {activeTab === 'prerequisites' && (
-            <div className="space-y-6 max-w-3xl">
-              <div>
-                <h2 className="text-lg font-semibold mb-4">Prerequisites</h2>
-                <div className="bg-gray-50 rounded-lg p-8 text-center">
-                  <p className="text-gray-500 mb-2">Prerequisites management coming soon</p>
-                  <p className="text-sm text-gray-400">This feature will allow you to set course dependencies</p>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 5: ADVANCED SETTINGS (Placeholder) */}
-          {activeTab === 'advanced' && (
-            <div className="space-y-6 max-w-3xl">
-              <div>
-                <h2 className="text-lg font-semibold mb-4">Advanced Settings</h2>
-                <div className="bg-gray-50 rounded-lg p-8 text-center">
-                  <p className="text-gray-500 mb-2">Advanced settings coming soon</p>
-                  <p className="text-sm text-gray-400">This will include enrollment settings, completion criteria, and notifications</p>
                 </div>
               </div>
             </div>

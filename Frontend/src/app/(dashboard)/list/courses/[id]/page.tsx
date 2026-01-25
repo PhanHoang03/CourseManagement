@@ -10,7 +10,7 @@ import FormModal from "@/components/FormModal";
 import Table from "@/components/Table";
 import AssignmentSubmissionsList from "@/components/assignments/AssignmentSubmissionsList";
 
-type TabType = 'overview' | 'content' | 'assignments' | 'assessments' | 'settings' | 'enrollments' | 'analytics';
+type TabType = 'overview' | 'content' | 'assignments' | 'assessments' | 'enrollments' | 'analytics';
 
 const CourseDetailPage = () => {
   const params = useParams();
@@ -30,6 +30,7 @@ const CourseDetailPage = () => {
   const [moduleContents, setModuleContents] = useState<{ [key: string]: any[] }>({});
 
   const canEdit = currentUser?.role === 'admin' || (currentUser?.role === 'instructor' && course?.instructorId === currentUser.id);
+  const isInstructorOwner = currentUser?.role === 'instructor' && course?.instructorId === currentUser.id;
 
   const fetchCourseData = async () => {
     try {
@@ -305,7 +306,6 @@ const CourseDetailPage = () => {
               { id: 'content', label: 'Content' },
               { id: 'assignments', label: 'Assignments' },
               { id: 'assessments', label: 'Assessments' },
-              { id: 'settings', label: 'Settings' },
               { id: 'enrollments', label: 'Enrollments' },
               { id: 'analytics', label: 'Analytics' },
             ].map((tab) => (
@@ -459,13 +459,6 @@ const CourseDetailPage = () => {
                           >
                             <Image src="/lesson.png" alt="" width={16} height={16} className="inline mr-2" />
                             Manage Content
-                          </button>
-                          <button
-                            onClick={() => setActiveTab('settings')}
-                            className="w-full text-left px-4 py-2 bg-white rounded-md hover:bg-gray-100 text-sm"
-                          >
-                            <Image src="/setting.png" alt="" width={16} height={16} className="inline mr-2" />
-                            Edit Settings
                           </button>
                         </>
                       )}
@@ -752,34 +745,11 @@ const CourseDetailPage = () => {
               </div>
             )}
 
-            {/* SETTINGS TAB */}
-            {activeTab === 'settings' && (
-              <div className="space-y-6">
-                {canEdit ? (
-                  <FormModal
-                    table="course"
-                    type="update"
-                    id={courseId}
-                    onSuccess={fetchCourseData}
-                  />
-                ) : (
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <p className="text-gray-500">You don't have permission to edit this course</p>
-                  </div>
-                )}
-              </div>
-            )}
-
             {/* ENROLLMENTS TAB */}
             {activeTab === 'enrollments' && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h2 className="text-lg font-semibold">Enrollments ({totalEnrollments})</h2>
-                  {canEdit && (
-                    <button className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700">
-                      Enroll Users
-                    </button>
-                  )}
                 </div>
                 {enrollments.length > 0 ? (
                   <Table

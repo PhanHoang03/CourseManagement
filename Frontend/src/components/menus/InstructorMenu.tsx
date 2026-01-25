@@ -23,11 +23,6 @@ const instructorMenuItems = [
         label: 'My Courses',
         href: '/instructor/courses',
       },
-      {
-        icon: '/class.png',
-        label: 'Create Course',
-        href: '/instructor/courses/new',
-      },
     ],
   },
   {
@@ -36,7 +31,7 @@ const instructorMenuItems = [
       {
         icon: '/student.png',
         label: 'Students',
-        href: '/instructor/students',
+        href: '/list/users',
       },
     ],
   },

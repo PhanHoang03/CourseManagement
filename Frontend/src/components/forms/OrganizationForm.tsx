@@ -9,10 +9,11 @@ import { organizationsApi } from "@/lib/api";
 
 const schema = z.object({
   name: z.string().min(2, { message: "Organization name is required" }),
+  slug: z.string()
+    .min(2, { message: "Slug must be at least 2 characters" })
+    .regex(/^[a-z0-9-]+$/, { message: "Slug can only contain lowercase letters, numbers, and hyphens" }),
   domain: z.string().optional(),
-  address: z.string().optional(),
-  phone: z.string().optional(),
-  email: z.string().email({ message: "Invalid email address" }).optional().or(z.literal("")),
+  logoUrl: z.string().url({ message: "Invalid URL" }).optional().or(z.literal("")),
   subscriptionTier: z.enum(["free", "basic", "premium", "enterprise"]).optional(),
   isActive: z.boolean().default(true),
 });
@@ -38,10 +39,9 @@ const OrganizationForm = ({
     resolver: zodResolver(schema),
     defaultValues: data ? {
       name: data.name,
+      slug: data.slug,
       domain: data.domain,
-      address: data.address,
-      phone: data.phone,
-      email: data.email,
+      logoUrl: data.logoUrl,
       subscriptionTier: data.subscriptionTier,
       isActive: data.isActive !== undefined ? data.isActive : true,
     } : undefined,
@@ -83,6 +83,15 @@ const OrganizationForm = ({
           defaultValue={data?.name}
           register={register}
           error={errors.name}
+          required
+        />
+        <InputField
+          label="Slug"
+          name="slug"
+          defaultValue={data?.slug}
+          register={register}
+          error={errors.slug}
+          required
         />
         <InputField
           label="Domain"
@@ -92,26 +101,12 @@ const OrganizationForm = ({
           error={errors.domain}
         />
         <InputField
-          label="Email"
-          name="email"
-          type="email"
-          defaultValue={data?.email}
+          label="Logo URL"
+          name="logoUrl"
+          type="url"
+          defaultValue={data?.logoUrl}
           register={register}
-          error={errors.email}
-        />
-        <InputField
-          label="Phone"
-          name="phone"
-          defaultValue={data?.phone}
-          register={register}
-          error={errors.phone}
-        />
-        <InputField
-          label="Address"
-          name="address"
-          defaultValue={data?.address}
-          register={register}
-          error={errors.address}
+          error={errors.logoUrl}
         />
         <div className="flex flex-col gap-2 w-full md:w-1/4">
           <label className="text-xs text-gray-500">Subscription Tier</label>

@@ -12,7 +12,7 @@ import Link from "next/link";
 type Enrollment = {
   id: string;
   status: string;
-  progress: number;
+  progressPercentage?: number;
   startedAt?: string;
   completedAt?: string;
   course: {
@@ -139,15 +139,7 @@ const EnrollmentsListPage = () => {
         </span>
       </td>
       <td className="hidden lg:table-cell">
-        <div className="flex items-center gap-2">
-          <div className="w-16 bg-gray-200 rounded-full h-2">
-            <div
-              className="bg-blue-600 h-2 rounded-full"
-              style={{ width: `${item.progress}%` }}
-            ></div>
-          </div>
-          <span className="text-xs">{item.progress}%</span>
-        </div>
+        <span className="text-sm font-medium">{item.progressPercentage ?? 0}%</span>
       </td>
       <td className="hidden lg:table-cell">
         {item.startedAt

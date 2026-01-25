@@ -1,8 +1,15 @@
 // API Client for Course Management System
 
+// TODO: Remove hardcoded URL after setting environment variable in Vercel
 const API_BASE_URL = typeof window !== 'undefined' 
-  ? (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1')
-  : 'http://localhost:5000/api/v1';
+  ? (process.env.NEXT_PUBLIC_API_URL || 'https://course-management-api-ltw3.onrender.com/api/v1')
+  : 'https://course-management-api-ltw3.onrender.com/api/v1';
+
+// Debug: Log API base URL (only in development)
+if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+  console.log('🔗 API Base URL:', API_BASE_URL);
+  console.log('📝 Environment Variable:', process.env.NEXT_PUBLIC_API_URL || 'NOT SET (using fallback)');
+}
 
 // Types
 export interface ApiResponse<T> {
@@ -45,7 +52,15 @@ async function apiRequest<T>(
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    // Construct full URL
+    const fullUrl = `${API_BASE_URL}${endpoint}`;
+    
+    // Debug logging (only in development)
+    if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+      console.log('🌐 API Request:', options.method || 'GET', fullUrl);
+    }
+
+    const response = await fetch(fullUrl, {
       ...options,
       headers,
       credentials: 'include',

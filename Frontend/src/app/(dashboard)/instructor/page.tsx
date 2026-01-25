@@ -188,7 +188,7 @@ const InstructorPage = () => {
               {recentCourses.map((course) => (
                 <Link
                   key={course.id}
-                  href={`/courses/${course.id}`}
+                  href={`/list/courses/${course.id}`}
                   className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   <div className="flex-1">

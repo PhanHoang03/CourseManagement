@@ -494,7 +494,14 @@ class ProgressService {
       throw new ForbiddenError('Access denied');
     }
 
-    // Get enrollment
+    // For admin/instructor: they can view course details without being enrolled
+    // Return null progress since they don't have personal progress in the course
+    if (requestingUserRole === 'admin' || requestingUserRole === 'instructor') {
+      return null;
+    }
+
+    // For trainees: only return progress if they are enrolled
+    // If not enrolled, return null instead of throwing 404
     const enrollment = await prisma.enrollment.findFirst({
       where: {
         courseId,
@@ -528,8 +535,9 @@ class ProgressService {
       },
     });
 
+    // If not enrolled, return null (don't throw error)
     if (!enrollment) {
-      throw new NotFoundError('You are not enrolled in this course');
+      return null;
     }
 
     return {
