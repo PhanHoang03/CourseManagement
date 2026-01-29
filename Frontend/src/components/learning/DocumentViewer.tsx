@@ -14,7 +14,56 @@ const DocumentViewer = ({ content, enrollmentId, onComplete, initialCompleted }:
   const [isCompleted, setIsCompleted] = useState(!!initialCompleted);
   const [loading, setLoading] = useState(false);
 
-  const documentUrl = content.contentData?.url || content.fileUrl || '';
+  // Normalize document URL - convert relative paths to absolute URLs
+  // Also replaces localhost URLs with actual backend URL (for production)
+  const normalizeDocumentUrl = (url: string): string => {
+    if (!url) return '';
+    
+    // If it's already an absolute URL (http:// or https://)
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('//')) {
+      // Check if it's a localhost URL - replace with actual backend URL
+      if (url.includes('localhost') || url.includes('127.0.0.1')) {
+        // Get the backend base URL using same logic as api.ts
+        const DEFAULT_DEV_API_URL = 'http://localhost:5000/api/v1';
+        const DEFAULT_PROD_API_URL = 'https://course-management-api-ltw3.onrender.com/api/v1';
+        const backendBaseUrl =
+          process.env.NEXT_PUBLIC_API_URL ||
+          (process.env.NODE_ENV === 'development' ? DEFAULT_DEV_API_URL : DEFAULT_PROD_API_URL);
+        const serverBase = backendBaseUrl.replace('/api/v1', '');
+        
+        // Extract the path from the localhost URL
+        try {
+          const urlObj = new URL(url);
+          const path = urlObj.pathname;
+          // Use the actual backend URL instead of localhost
+          return `${serverBase}${path}`;
+        } catch (e) {
+          // If URL parsing fails, try to extract path manually
+          const pathMatch = url.match(/\/uploads\/.*/);
+          if (pathMatch) {
+            return `${serverBase}${pathMatch[0]}`;
+          }
+          return url;
+        }
+      }
+      // If it's already a valid absolute URL (not localhost), return as is
+      return url;
+    }
+    
+    // If it starts with /, it's a relative path from server root
+    const DEFAULT_DEV_API_URL = 'http://localhost:5000/api/v1';
+    const DEFAULT_PROD_API_URL = 'https://course-management-api-ltw3.onrender.com/api/v1';
+    const backendBaseUrl =
+      process.env.NEXT_PUBLIC_API_URL ||
+      (process.env.NODE_ENV === 'development' ? DEFAULT_DEV_API_URL : DEFAULT_PROD_API_URL);
+    const serverBase = backendBaseUrl.replace('/api/v1', '');
+    
+    const normalizedPath = url.startsWith('/') ? url : `/${url}`;
+    return `${serverBase}${normalizedPath}`;
+  };
+
+  const rawDocumentUrl = content.contentData?.url || content.fileUrl || '';
+  const documentUrl = normalizeDocumentUrl(rawDocumentUrl);
 
   // Reset/sync when switching content
   useEffect(() => {

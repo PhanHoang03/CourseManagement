@@ -26,6 +26,7 @@ const VideoViewer = ({ content, enrollmentId, onComplete, onProgress, initialCom
   const completionThreshold = 0.8; // 80% watched = complete
 
   // Normalize video URL - convert relative paths to absolute URLs
+  // Also replaces localhost URLs with actual backend URL (for production)
   const normalizeVideoUrl = (url: string): string => {
     if (!url) return '';
     
@@ -39,21 +40,41 @@ const VideoViewer = ({ content, enrollmentId, onComplete, onProgress, initialCom
       return url;
     }
     
-    // If it's already an absolute URL (http:// or https://), return as is
-    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('//')) {
-      return url;
-    }
-    
-    // If it starts with /, it's a relative path from server root
-    // Get the backend base URL (remove /api/v1)
-    const backendBaseUrl = typeof window !== 'undefined' 
-      ? (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1')
-      : 'http://localhost:5000/api/v1';
+    // Get the backend base URL using same logic as api.ts
+    const DEFAULT_DEV_API_URL = 'http://localhost:5000/api/v1';
+    const DEFAULT_PROD_API_URL = 'https://course-management-api-ltw3.onrender.com/api/v1';
+    const backendBaseUrl =
+      process.env.NEXT_PUBLIC_API_URL ||
+      (process.env.NODE_ENV === 'development' ? DEFAULT_DEV_API_URL : DEFAULT_PROD_API_URL);
     
     // Remove /api/v1 to get base server URL
     const serverBase = backendBaseUrl.replace('/api/v1', '');
     
-    // Ensure path starts with /
+    // If it's already an absolute URL (http:// or https://)
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('//')) {
+      // Check if it's a localhost URL - replace with actual backend URL
+      if (url.includes('localhost') || url.includes('127.0.0.1')) {
+        // Extract the path from the localhost URL
+        try {
+          const urlObj = new URL(url);
+          const path = urlObj.pathname;
+          // Use the actual backend URL instead of localhost
+          return `${serverBase}${path}`;
+        } catch (e) {
+          // If URL parsing fails, try to extract path manually
+          const pathMatch = url.match(/\/uploads\/.*/);
+          if (pathMatch) {
+            return `${serverBase}${pathMatch[0]}`;
+          }
+          // If we can't extract path, return original (might cause error but better than breaking)
+          return url;
+        }
+      }
+      // If it's already a valid absolute URL (not localhost), return as is
+      return url;
+    }
+    
+    // If it starts with /, it's a relative path from server root
     const normalizedPath = url.startsWith('/') ? url : `/${url}`;
     
     return `${serverBase}${normalizedPath}`;
