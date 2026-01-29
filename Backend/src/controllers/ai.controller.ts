@@ -112,35 +112,78 @@ class AIController {
   ];
 
   /**
-   * Summarize text
+   * Summarize text or document
+   * Supports both plain text and file uploads (PDF, DOCX, TXT)
    */
-  summarize = async (req: AuthRequest, res: Response, next: NextFunction) => {
-    try {
-      const { text, length, focus } = req.body;
+  summarize = [
+    upload.single('file'),
+    async (req: AuthRequest, res: Response, next: NextFunction) => {
+      try {
+        const { text, length, focus } = req.body;
+        let textToSummarize = text;
 
-      if (!text || typeof text !== 'string') {
-        return res.status(400).json({
-          success: false,
-          error: 'Text is required',
+        // If file is uploaded, parse it first
+        if (req.file) {
+          const filePath = req.file.path;
+          const fileName = req.file.originalname;
+          
+          try {
+            const { parseDocument } = await import('../utils/documentParser');
+            const parsedDoc = await parseDocument(filePath, fileName);
+            textToSummarize = parsedDoc.text;
+            
+            // Clean up uploaded file
+            try {
+              fs.unlinkSync(filePath);
+            } catch (error) {
+              console.error('Failed to delete temp file:', error);
+            }
+          } catch (parseError: any) {
+            // Clean up uploaded file on error
+            try {
+              fs.unlinkSync(filePath);
+            } catch (cleanupError) {
+              console.error('Failed to delete temp file:', cleanupError);
+            }
+            return res.status(400).json({
+              success: false,
+              error: `Failed to parse document: ${parseError.message}`,
+            });
+          }
+        }
+
+        if (!textToSummarize || typeof textToSummarize !== 'string' || textToSummarize.trim().length === 0) {
+          return res.status(400).json({
+            success: false,
+            error: 'Text or file is required',
+          });
+        }
+
+        const options = {
+          length: length || 'medium',
+          focus: focus || 'key-points',
+        };
+
+        const summary = await aiService.summarizeText(textToSummarize, options);
+
+        res.json({
+          success: true,
+          message: 'Text summarized successfully',
+          data: { summary },
         });
+      } catch (error) {
+        // Clean up uploaded file on error
+        if (req.file) {
+          try {
+            fs.unlinkSync(req.file.path);
+          } catch (cleanupError) {
+            console.error('Failed to delete temp file:', cleanupError);
+          }
+        }
+        next(error);
       }
-
-      const options = {
-        length: length || 'medium',
-        focus: focus || 'key-points',
-      };
-
-      const summary = await aiService.summarizeText(text, options);
-
-      res.json({
-        success: true,
-        message: 'Text summarized successfully',
-        data: { summary },
-      });
-    } catch (error) {
-      next(error);
-    }
-  };
+    },
+  ];
 
   /**
    * Chat about course

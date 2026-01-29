@@ -116,27 +116,8 @@ const TraineeQuizMakerPage = () => {
     setError(null);
 
     try {
-      // For PDF/DOCX, we need to send the file to backend for parsing
-      // For TXT, we can read it directly
-      let text = '';
-      
-      if (selectedFile.name.endsWith('.txt')) {
-        text = await selectedFile.text();
-      } else {
-        // For PDF/DOCX, we'll need to use a backend endpoint that parses and summarizes
-        // For now, show a message that full file summarization requires backend parsing
-        setError("Full document summarization for PDF/DOCX files will be available soon. For now, please use text files or generate a quiz first.");
-        setSummarizing(false);
-        return;
-      }
-      
-      if (text.length < 50) {
-        setError("File content is too short to summarize");
-        setSummarizing(false);
-        return;
-      }
-
-      const response = await aiApi.summarize(text, {
+      // Send file directly to backend - it will parse PDF/DOCX/TXT and summarize
+      const response = await aiApi.summarize(selectedFile, {
         length: 'medium',
         focus: 'key-points',
       });

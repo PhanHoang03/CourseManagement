@@ -327,7 +327,7 @@ const CourseDetailPage = () => {
         {/* TAB CONTENT */}
         <div className="flex-1 flex gap-4 p-6 overflow-auto">
           {/* LEFT SIDEBAR - Course Structure (for Content tab) */}
-          {activeTab === 'content' && modules.length > 0 && (
+          {activeTab === 'content' && (
             <div className="w-64 bg-gray-50 rounded-lg p-4 h-fit">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-semibold text-sm">Course Structure</h3>
@@ -340,8 +340,16 @@ const CourseDetailPage = () => {
                   />
                 )}
               </div>
-              <div className="space-y-2">
-                {modules.map((module) => (
+              {modules.length === 0 ? (
+                <div className="text-center py-8 text-sm text-gray-500">
+                  <p>No modules yet.</p>
+                  {canEdit && (
+                    <p className="mt-2">Click the + button above to add your first module.</p>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {modules.map((module) => (
                   <div
                     key={module.id}
                     className={`p-3 rounded-md cursor-pointer transition-colors ${
@@ -408,7 +416,8 @@ const CourseDetailPage = () => {
                     )}
                   </div>
                 ))}
-              </div>
+                </div>
+              )}
             </div>
           )}
 

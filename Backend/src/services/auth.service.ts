@@ -7,6 +7,7 @@ import {
   UnauthorizedError,
   ConflictError,
   NotFoundError,
+  ForbiddenError,
 } from '../utils/errors';
 import {
   RegisterInput,
@@ -54,6 +55,7 @@ class AuthService {
   }
 
   async register(data: RegisterInput) {
+    // Note: Admin role is not allowed in registration schema, so it cannot be created here
     // Check if user already exists
     const existingUser = await prisma.user.findFirst({
       where: {

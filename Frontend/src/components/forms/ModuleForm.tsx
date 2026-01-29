@@ -154,7 +154,19 @@ const ModuleForm = ({
       const sanitizedFormData = convertBigIntToString(formData);
       
       if (type === "create") {
-        await modulesApi.create(sanitizedFormData as CreateInputs);
+        // Ensure courseId is included (from data prop if not in formData)
+        const createData = {
+          ...sanitizedFormData,
+          courseId: (sanitizedFormData as any).courseId || data?.courseId,
+        } as CreateInputs;
+        
+        if (!createData.courseId) {
+          alert("Course ID is required");
+          setLoading(false);
+          return;
+        }
+        
+        await modulesApi.create(createData);
         reset();
       } else if (data?.id) {
         // For update, remove undefined/empty fields
@@ -183,6 +195,11 @@ const ModuleForm = ({
       <h1 className="text-xl font-semibold">
         {type === "create" ? "Create a new Module" : "Update Module"}
       </h1>
+
+      {/* Hidden courseId field for create mode */}
+      {type === "create" && data?.courseId && (
+        <input type="hidden" {...register("courseId")} value={data.courseId} />
+      )}
 
       <span className="text-xs text-gray-400">
         Module information

@@ -19,7 +19,7 @@ export const registerSchema = z.object({
     lastName: z.string().min(2, 'Last name is required'),
     phone: z.string().optional(),
     address: z.string().optional(),
-    role: z.enum(['admin', 'instructor', 'trainee']).default('trainee'),
+    role: z.enum(['instructor', 'trainee']).default('trainee'),
     organizationId: z.string().uuid().optional(),
     departmentId: z.string().uuid().optional(),
     employeeId: z.string().optional(),

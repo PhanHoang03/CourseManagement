@@ -23,6 +23,27 @@ dotenv.config();
 
 const app = express();
 
+// CORS origin allowlist (supports multiple origins)
+// - Set `CORS_ORIGINS` (comma-separated) on Render to allow both local + deployed frontends.
+// - Fallback keeps local dev working out of the box.
+const corsAllowList = new Set(
+  (process.env.CORS_ORIGINS ||
+    process.env.FRONTEND_URL || // backward compat
+    'http://localhost:3000')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+);
+// Common local dev origins (helpful when FRONTEND_URL is set to prod)
+corsAllowList.add('http://localhost:3000');
+corsAllowList.add('http://127.0.0.1:3000');
+
+const isOriginAllowed = (origin?: string) => {
+  if (!origin) return true; // same-origin, curl, Postman
+  if (corsAllowList.has(origin)) return true;
+  return false;
+};
+
 // Middleware
 // Configure Helmet to allow cross-origin requests for media files
 app.use(helmet({
@@ -30,7 +51,10 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false, // Allow embedding media from different origins
 }));
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: (origin, callback) => {
+    if (isOriginAllowed(origin)) return callback(null, true);
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
   credentials: true,
   exposedHeaders: ['Content-Range', 'Content-Length', 'Accept-Ranges'],
 }));
@@ -43,8 +67,12 @@ app.use(bigIntSerializer); // Convert BigInt to Number for JSON serialization
 // This allows access to uploaded files via: http://localhost:5000/uploads/videos/filename.mp4
 // Add CORS headers for video files using middleware
 app.use('/uploads', (req, res, next) => {
+  const origin = req.headers.origin as string | undefined;
+  if (origin && isOriginAllowed(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Vary', 'Origin');
+  }
   // Set CORS headers for all requests to /uploads
-  res.setHeader('Access-Control-Allow-Origin', process.env.FRONTEND_URL || 'http://localhost:3000');
   res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Range');
   res.setHeader('Access-Control-Expose-Headers', 'Content-Range, Content-Length, Accept-Ranges');
@@ -52,6 +80,8 @@ app.use('/uploads', (req, res, next) => {
   
   // Handle OPTIONS preflight requests
   if (req.method === 'OPTIONS') {
+    // If Origin is present but not allowed, fail fast
+    if (origin && !isOriginAllowed(origin)) return res.sendStatus(403);
     return res.sendStatus(200);
   }
   
@@ -59,7 +89,7 @@ app.use('/uploads', (req, res, next) => {
 }, express.static(path.join(__dirname, '../uploads'), {
   setHeaders: (res, filePath) => {
     // Ensure CORS headers are also set when static files are served
-    res.setHeader('Access-Control-Allow-Origin', process.env.FRONTEND_URL || 'http://localhost:3000');
+    // (middleware above handles dynamic origin echoing)
     res.setHeader('Access-Control-Expose-Headers', 'Content-Range, Content-Length, Accept-Ranges');
   }
 }));

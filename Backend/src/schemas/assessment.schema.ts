@@ -5,10 +5,33 @@ export const questionSchema = z.object({
   id: z.string(),
   type: z.enum(['multiple-choice', 'true-false', 'multiple-select']),
   question: z.string().min(1),
-  options: z.array(z.string()).min(2),
+  options: z.array(z.string()),
   correctAnswers: z.union([z.number(), z.array(z.number())]),
   points: z.number().min(0).default(10),
   explanation: z.string().optional(),
+}).refine((data) => {
+  // For true-false questions, auto-populate options if empty
+  if (data.type === 'true-false' && data.options.length === 0) {
+    return true; // Will be handled by transform
+  }
+  // For other types, require at least 2 options
+  if (data.type !== 'true-false') {
+    return data.options.length >= 2;
+  }
+  // For true-false with options, require at least 2
+  return data.options.length >= 2;
+}, {
+  message: "Options array must have at least 2 items",
+  path: ["options"],
+}).transform((data) => {
+  // Auto-populate options for true-false questions if empty
+  if (data.type === 'true-false' && data.options.length === 0) {
+    return {
+      ...data,
+      options: ['True', 'False'],
+    };
+  }
+  return data;
 });
 
 // Settings schema

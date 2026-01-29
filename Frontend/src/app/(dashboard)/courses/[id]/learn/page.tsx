@@ -497,11 +497,11 @@ const LearningPage = () => {
         )}
 
         {/* Main Content Viewer */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
           {currentAssessment ? (
-            <div className="flex-1 flex flex-col">
+            <div className="flex-1 flex flex-col min-h-0">
               {/* Assessment Header */}
-              <div className="bg-white border-b border-gray-200 px-6 py-4">
+              <div className="flex-shrink-0 bg-white border-b border-gray-200 px-6 py-4">
                 <h2 className="text-lg font-semibold">{currentAssessment.title}</h2>
                 {currentAssessment.description && (
                   <p className="text-sm text-gray-600 mt-1">{currentAssessment.description}</p>
@@ -509,7 +509,7 @@ const LearningPage = () => {
               </div>
 
               {/* Assessment Body */}
-              <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+              <div className="flex-1 min-h-0">
                 <AssessmentViewer
                   assessmentId={currentAssessment.id}
                   enrollmentId={enrollment.id}

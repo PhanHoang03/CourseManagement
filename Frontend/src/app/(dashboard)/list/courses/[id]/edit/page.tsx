@@ -591,32 +591,6 @@ const CourseEditPage = () => {
                     }}
                   />
                   <p className="text-xs text-gray-400 -mt-2">Estimated time to complete the course</p>
-
-                  <div className="flex items-center gap-2 pt-2">
-                    <input
-                      type="checkbox"
-                      id="isCertified"
-                      {...register("isCertified")}
-                      className="w-4 h-4 text-blue-600 ring-gray-300 rounded"
-                    />
-                    <label htmlFor="isCertified" className="text-sm text-gray-700">
-                      Enable certificate generation on course completion
-                    </label>
-                  </div>
-
-                  {watch("isCertified") && (
-                    <div className="flex flex-col gap-2 ml-6">
-                      <label className="text-xs text-gray-500">Certificate Template</label>
-                      <select
-                        className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
-                        {...register("certificateTemplateId")}
-                      >
-                        <option value="">None (Use default template)</option>
-                        {/* TODO: Load certificate templates when available */}
-                      </select>
-                      <p className="text-xs text-gray-400">Certificate templates will be available soon</p>
-                    </div>
-                  )}
                 </div>
               </div>
             </div>

@@ -1,9 +1,14 @@
 // API Client for Course Management System
 
-// TODO: Remove hardcoded URL after setting environment variable in Vercel
-const API_BASE_URL = typeof window !== 'undefined' 
-  ? (process.env.NEXT_PUBLIC_API_URL || 'https://course-management-api-ltw3.onrender.com/api/v1')
-  : 'https://course-management-api-ltw3.onrender.com/api/v1';
+// Base URL selection
+// - In dev: default to local backend to avoid CORS issues with deployed APIs
+// - In prod: default to Render backend
+// - You can still override with `NEXT_PUBLIC_API_URL` (Vercel/local shell env)
+const DEFAULT_DEV_API_URL = 'http://localhost:5000/api/v1';
+const DEFAULT_PROD_API_URL = 'https://course-management-api-ltw3.onrender.com/api/v1';
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  (process.env.NODE_ENV === 'development' ? DEFAULT_DEV_API_URL : DEFAULT_PROD_API_URL);
 
 // Debug: Log API base URL (only in development)
 if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
@@ -82,48 +87,56 @@ async function apiRequest<T>(
     }
 
     if (!response.ok) {
-      // Handle token expiration
+      // Handle token expiration (but not for login/register endpoints)
       if (response.status === 401) {
-        // Try to refresh token
-        if (typeof window !== 'undefined') {
-          const refreshToken = localStorage.getItem('refreshToken');
-          if (refreshToken) {
-            try {
-              const refreshController = new AbortController();
-              const refreshTimeout = setTimeout(() => refreshController.abort(), 5000);
-              
-              const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ refreshToken }),
-                signal: refreshController.signal,
-              });
-              
-              clearTimeout(refreshTimeout);
-              
-              if (refreshResponse.ok) {
-                const refreshData = await refreshResponse.json();
-                localStorage.setItem('accessToken', refreshData.data.accessToken);
-                localStorage.setItem('refreshToken', refreshData.data.refreshToken);
+        // Don't try to refresh token for auth endpoints (login, register, refresh)
+        const isAuthEndpoint = endpoint.startsWith('/auth/login') || 
+                              endpoint.startsWith('/auth/register') || 
+                              endpoint.startsWith('/auth/refresh');
+        
+        if (!isAuthEndpoint) {
+          // Try to refresh token for other endpoints
+          if (typeof window !== 'undefined') {
+            const refreshToken = localStorage.getItem('refreshToken');
+            if (refreshToken) {
+              try {
+                const refreshController = new AbortController();
+                const refreshTimeout = setTimeout(() => refreshController.abort(), 5000);
                 
-                // Retry original request
-                return apiRequest<T>(endpoint, options);
+                const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ refreshToken }),
+                  signal: refreshController.signal,
+                });
+                
+                clearTimeout(refreshTimeout);
+                
+                if (refreshResponse.ok) {
+                  const refreshData = await refreshResponse.json();
+                  localStorage.setItem('accessToken', refreshData.data.accessToken);
+                  localStorage.setItem('refreshToken', refreshData.data.refreshToken);
+                  
+                  // Retry original request
+                  return apiRequest<T>(endpoint, options);
+                }
+              } catch (error) {
+                // Refresh failed, redirect to login
+                if (typeof window !== 'undefined') {
+                  localStorage.removeItem('accessToken');
+                  localStorage.removeItem('refreshToken');
+                  window.location.href = '/sign-in';
+                }
               }
-            } catch (error) {
-              // Refresh failed, redirect to login
-              if (typeof window !== 'undefined') {
-                localStorage.removeItem('accessToken');
-                localStorage.removeItem('refreshToken');
-                window.location.href = '/sign-in';
-              }
+            } else {
+              // No refresh token, redirect to login
+              localStorage.removeItem('accessToken');
+              localStorage.removeItem('refreshToken');
+              window.location.href = '/sign-in';
             }
-          } else {
-            // No refresh token, redirect to login
-            localStorage.removeItem('accessToken');
-            localStorage.removeItem('refreshToken');
-            window.location.href = '/sign-in';
           }
         }
+        // For auth endpoints, just throw the error (don't redirect)
       }
       
       // If validation error, include details
@@ -717,10 +730,39 @@ export const aiApi = {
     }
   },
 
-  summarize: async (text: string, options?: {
+  summarize: async (text: string | File, options?: {
     length?: 'short' | 'medium' | 'long';
     focus?: 'key-points' | 'detailed' | 'bullet-points';
   }) => {
+    // If File is provided, use FormData for file upload
+    if (text instanceof File) {
+      const formData = new FormData();
+      formData.append('file', text);
+      if (options?.length) formData.append('length', options.length);
+      if (options?.focus) formData.append('focus', options.focus);
+      
+      const token = getToken();
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const fullUrl = `${API_BASE_URL}/ai/summarize`;
+      const response = await fetch(fullUrl, {
+        method: 'POST',
+        headers,
+        credentials: 'include',
+        body: formData,
+      });
+      
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || data.error || 'Failed to summarize');
+      }
+      return data;
+    }
+    
+    // Otherwise, send as JSON (plain text)
     return apiRequest<{ summary: string }>('/ai/summarize', {
       method: 'POST',
       body: JSON.stringify({

@@ -28,7 +28,7 @@ const schema = z.object({
   lastName: z.string().min(2, { message: "Last name is required" }),
   phone: z.string().optional(),
   address: z.string().optional(),
-  role: z.enum(["admin", "instructor", "trainee"]).default("trainee"),
+  role: z.enum(["instructor", "trainee"]).default("trainee"),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -171,7 +171,6 @@ const SignUpPage = () => {
             >
               <option value="trainee">Trainee</option>
               <option value="instructor">Instructor</option>
-              <option value="admin">Admin</option>
             </select>
             {errors.role && (
               <p className="mt-1 text-sm text-red-600">{errors.role.message}</p>

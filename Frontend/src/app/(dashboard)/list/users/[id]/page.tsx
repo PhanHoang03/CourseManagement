@@ -17,19 +17,17 @@ const UserDetailPage = () => {
   const [user, setUser] = useState<any>(null);
   const [courses, setCourses] = useState<any[]>([]);
   const [progress, setProgress] = useState<any[]>([]);
-  const [certificates, setCertificates] = useState<any[]>([]);
   const [enrollments, setEnrollments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'courses' | 'progress' | 'certificates' | 'activity'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'courses' | 'progress' | 'activity'>('overview');
 
   const fetchUserData = async () => {
     try {
       setLoading(true);
-      const [userRes, coursesRes, progressRes, certificatesRes, enrollmentsRes] = await Promise.all([
+      const [userRes, coursesRes, progressRes, enrollmentsRes] = await Promise.all([
         usersApi.getById(userId),
         usersApi.getCourses(userId).catch(() => ({ success: false, data: [] })),
         usersApi.getProgress(userId).catch(() => ({ success: false, data: [] })),
-        usersApi.getCertificates(userId).catch(() => ({ success: false, data: [] })),
         enrollmentsApi.getAll({ traineeId: userId }).catch(() => ({ success: false, data: [] })),
       ]);
 
@@ -41,9 +39,6 @@ const UserDetailPage = () => {
       }
       if (progressRes.success && progressRes.data) {
         setProgress(progressRes.data);
-      }
-      if (certificatesRes.success && certificatesRes.data) {
-        setCertificates(certificatesRes.data);
       }
       if (enrollmentsRes.success && enrollmentsRes.data) {
         setEnrollments(enrollmentsRes.data);
@@ -220,7 +215,6 @@ const UserDetailPage = () => {
             { id: 'overview', label: 'Overview' },
             { id: 'courses', label: 'Courses' },
             { id: 'progress', label: 'Progress' },
-            { id: 'certificates', label: 'Certificates' },
             { id: 'activity', label: 'Activity' },
           ].map((tab) => (
             <button
@@ -397,37 +391,6 @@ const UserDetailPage = () => {
                       </div>
                       <span className="text-sm font-medium">{prog.overallProgress || 0}%</span>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* CERTIFICATES TAB */}
-        {activeTab === 'certificates' && (
-          <div className="space-y-4">
-            {certificates.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">No certificates earned yet</p>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {certificates.map((cert: any) => (
-                  <div key={cert.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                    <h3 className="font-semibold mb-2">{cert.course?.title || 'Certificate'}</h3>
-                    <p className="text-xs text-gray-500 mb-3">
-                      Issued: {cert.issuedAt ? new Date(cert.issuedAt).toLocaleDateString() : 'N/A'}
-                    </p>
-                    {cert.certificateUrl && (
-                      <a
-                        href={cert.certificateUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 text-sm hover:underline inline-flex items-center gap-1"
-                      >
-                        <Image src="/view.png" alt="View" width={14} height={14} />
-                        View Certificate
-                      </a>
-                    )}
                   </div>
                 ))}
               </div>

@@ -16,8 +16,8 @@ const schema = z.object({
   departmentId: z.string().uuid().optional(),
   instructorId: z.string().uuid({ message: "Instructor is required" }).optional(),
   difficultyLevel: z.enum(["beginner", "intermediate", "advanced"]).default("beginner"),
-  estimatedDuration: z.number().int().positive().optional(),
-  maxEnrollments: z.number().int().positive().optional(),
+  estimatedDuration: z.coerce.number().int().positive().optional(),
+  maxEnrollments: z.coerce.number().int().positive().optional(),
   isCertified: z.boolean().default(false),
   isPublic: z.boolean().default(false),
   status: z.enum(["draft", "published", "archived"]).default("draft"),
@@ -115,6 +115,14 @@ const CourseForm = ({
         submitData.tags = submitData.tags.split(',').map((tag: string) => tag.trim()).filter((tag: string) => tag.length > 0);
       }
       
+      // Remove undefined/empty number fields (setValueAs already converted strings to numbers)
+      if (submitData.estimatedDuration === undefined || submitData.estimatedDuration === null) {
+        delete submitData.estimatedDuration;
+      }
+      if (submitData.maxEnrollments === undefined || submitData.maxEnrollments === null) {
+        delete submitData.maxEnrollments;
+      }
+      
       if (type === "create") {
         // Ensure instructorId is set (use pre-filled value if provided)
         if (!submitData.instructorId && data?.instructorId) {
@@ -176,7 +184,9 @@ const CourseForm = ({
           name="estimatedDuration"
           type="number"
           defaultValue={data?.estimatedDuration}
-          register={register}
+          register={(name: any) => register(name, { 
+            setValueAs: (v: string) => v === '' || v === null || v === undefined ? undefined : parseInt(v, 10) 
+          })}
           error={errors.estimatedDuration}
         />
         <InputField
@@ -184,7 +194,9 @@ const CourseForm = ({
           name="maxEnrollments"
           type="number"
           defaultValue={data?.maxEnrollments}
-          register={register}
+          register={(name: any) => register(name, { 
+            setValueAs: (v: string) => v === '' || v === null || v === undefined ? undefined : parseInt(v, 10) 
+          })}
           error={errors.maxEnrollments}
         />
       </div>
@@ -307,17 +319,6 @@ const CourseForm = ({
             <option value="draft">Draft</option>
             <option value="published">Published</option>
             <option value="archived">Archived</option>
-          </select>
-        </div>
-        <div className="flex flex-col gap-2 w-full md:w-1/4">
-          <label className="text-xs text-gray-500">Certified Course</label>
-          <select
-            className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
-            defaultValue={data?.isCertified !== undefined ? (data.isCertified ? "true" : "false") : "false"}
-            {...register("isCertified", { setValueAs: (v) => v === "true" })}
-          >
-            <option value="false">No</option>
-            <option value="true">Yes</option>
           </select>
         </div>
         <div className="flex flex-col gap-2 w-full md:w-1/4">
