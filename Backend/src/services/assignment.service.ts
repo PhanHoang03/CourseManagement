@@ -116,6 +116,8 @@ export default {
             courseCode: true,
             organizationId: true,
             instructorId: true,
+            status: true,
+            isPublic: true,
           },
         },
         _count: {
@@ -130,12 +132,53 @@ export default {
       throw new NotFoundError('Assignment not found');
     }
 
-    // Organization access check
-    if (requestingUserRole !== 'admin' && assignment.course.organizationId !== requestingUserOrgId) {
+    if (requestingUserRole === 'admin') {
+      // Admins can access all assignments
+      return assignment;
+    }
+
+    if (requestingUserRole === 'instructor') {
+      // Instructors can access assignments from their own courses or same organization
+      if (assignment.course.instructorId === requestingUserId) {
+        return assignment;
+      }
+      if (requestingUserOrgId && assignment.course.organizationId === requestingUserOrgId) {
+        return assignment;
+      }
       throw new ForbiddenError('Access denied to this assignment');
     }
 
-    return assignment;
+    // For trainees: check enrollment or public course
+    if (requestingUserRole === 'trainee') {
+      // Check if trainee is enrolled in the course
+      const enrollment = await prisma.enrollment.findFirst({
+        where: {
+          courseId: assignment.courseId,
+          traineeId: requestingUserId,
+          status: { in: ['enrolled', 'in_progress', 'completed'] },
+        },
+      });
+
+      if (enrollment) {
+        // Trainee is enrolled, allow access
+        return assignment;
+      }
+
+      // If course is public and published, allow viewing assignment (but not submitting)
+      if (assignment.course.isPublic && assignment.course.status === 'published') {
+        return assignment;
+      }
+
+      // If trainee belongs to same organization, allow viewing (they can enroll)
+      if (requestingUserOrgId && assignment.course.organizationId === requestingUserOrgId) {
+        return assignment;
+      }
+
+      throw new ForbiddenError('Access denied. You must be enrolled in this course to view the assignment.');
+    }
+
+    // Default: deny access
+    throw new ForbiddenError('Access denied to this assignment');
   },
 
   async createAssignment(data: CreateAssignmentInput, requestingUserId: string, requestingUserRole: string, requestingUserOrgId?: string) {
